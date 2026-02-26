@@ -76,7 +76,7 @@ export const googleChatChannelPlugin: ChannelPlugin<any> = {
   },
   gateway: {
     startAccount: async (ctx) => {
-      const accountId = ctx.account.accountId;
+      const accountId = ctx.accountId ?? DEFAULT_ACCOUNT_ID;
       const chCfg: any = ctx.cfg.channels?.google_chat_channel ?? {};
       const path = String(chCfg?.inbound?.path ?? defaults.path);
 
