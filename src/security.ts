@@ -1,7 +1,31 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
 function normalizeIp(input?: string): string {
-  return (input ?? "").trim();
+  const raw = (input ?? "").trim();
+  return raw.startsWith("::ffff:") ? raw.slice(7) : raw;
+}
+
+function ipv4ToInt(ip: string): number | null {
+  const parts = ip.split(".").map((p) => Number(p));
+  if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
+    return null;
+  }
+  return (((parts[0] << 24) >>> 0) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
+}
+
+function ipMatchesEntry(ip: string, entry: string): boolean {
+  const rule = normalizeIp(entry);
+  if (!rule) return false;
+  if (!rule.includes('/')) return ip === rule;
+  const [base, bitsRaw] = rule.split('/');
+  const bits = Number(bitsRaw);
+  const ipInt = ipv4ToInt(ip);
+  const baseInt = ipv4ToInt(base);
+  if (ipInt == null || baseInt == null || !Number.isInteger(bits) || bits < 0 || bits > 32) {
+    return false;
+  }
+  const mask = bits === 0 ? 0 : ((0xffffffff << (32 - bits)) >>> 0);
+  return (ipInt & mask) === (baseInt & mask);
 }
 
 function hashForSafeCompare(value: string): Buffer {
@@ -27,7 +51,8 @@ export function assertInboundTrusted(params: {
   expectedSecret?: string;
 }) {
   const ip = extractRequestIp(params.headers, params.remoteAddress);
-  if (!params.trustedIps.includes(ip)) {
+  const allowed = (params.trustedIps ?? []).some((entry) => ipMatchesEntry(ip, String(entry)));
+  if (!allowed) {
     throw new Error("ip_not_allowed");
   }
 
