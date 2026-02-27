@@ -130,7 +130,8 @@ export const googleChatChannelPlugin: ChannelPlugin<any> = {
         const chCfg: any = ctx.cfg.channels?.google_chat_channel ?? {};
         const path = String(chCfg?.inbound?.path ?? defaults.path);
 
-        console.log(`${TAG} startAccount: accountId=${accountId} path=${path} hasRuntime=${!!ctx.runtime}`);
+        console.log(`${TAG} startAccount: accountId=${accountId} path=${path} hasRuntime=${!!ctx.runtime} hasDispatch=${typeof ctx.runtime?.inbound?.dispatch}`);
+        console.log(`${TAG} startAccount: ctx keys=${Object.keys(ctx).join(",")}`);
 
         const unregister = registerGoogleChatChannelWebhookTarget({
           path,
@@ -142,6 +143,7 @@ export const googleChatChannelPlugin: ChannelPlugin<any> = {
         console.log(`${TAG} startAccount: running`);
 
         return () => {
+          console.log(`${TAG} teardown called`, new Error("teardown stack").stack);
           unregister?.();
           ctx.setStatus({ accountId, running: false, lastStopAt: Date.now() });
         };

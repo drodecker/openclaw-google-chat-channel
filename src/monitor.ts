@@ -107,10 +107,11 @@ export async function handleGoogleChatChannelInboundWebhook(
     const canonical = normalizeInboundToCanonical(inbound);
 
     // Canonical routing only; no Google-specific prompt behavior.
-    console.log(`${TAG} dispatching to runtime.inbound.dispatch`);
-    await target.runtime?.inbound?.dispatch?.(canonical);
-
-    console.log(`${TAG} dispatched ok`);
+    const hasInbound = !!target.runtime?.inbound;
+    const hasDispatch = typeof target.runtime?.inbound?.dispatch;
+    console.log(`${TAG} dispatch check: hasRuntime=${!!target.runtime} hasInbound=${hasInbound} dispatchType=${hasDispatch}`);
+    const result = await target.runtime?.inbound?.dispatch?.(canonical);
+    console.log(`${TAG} dispatch result:`, result);
     res.statusCode = 200;
     res.setHeader("Content-Type", "application/json");
     res.end('{"ok":true}');
